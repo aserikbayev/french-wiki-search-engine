@@ -1,0 +1,7 @@
+logs
+archive
+output
+anserini
+pyserini
+*_cache
+retriv_wd

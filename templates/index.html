@@ -1,0 +1,118 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MIRACL Search</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.3/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.0/marked.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            line-height: 1.5;
+        }
+        
+        .search-container {
+            margin: 2rem 0;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .results {
+            margin-top: 2rem;
+        }
+        
+        .result {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+        }
+        
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-score {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-text {
+            color: #334155;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div x-data="{ 
+        query: '',
+        results: [],
+        loading: false,
+        
+        search() {
+            if (!this.query.trim()) return;
+            
+            this.loading = true;
+            fetch(`/search?q=${encodeURIComponent(this.query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    this.results = data;
+                    this.loading = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    this.loading = false;
+                });
+        }
+    }">
+        <h1>MIRACL Search</h1>
+        
+        <div class="search-container">
+            <input 
+                type="text" 
+                x-model="query"
+                @keyup.enter="search"
+                placeholder="Enter your search query..."
+                class="search-box"
+            >
+        </div>
+        
+        <template x-if="loading">
+            <div class="loading">
+                Searching...
+            </div>
+        </template>
+        
+        <div class="results">
+            <template x-for="result in results" :key="result.id">
+                <div class="result">
+                    <div class="result-title" x-text="result.title || 'Untitled'"></div>
+                    <div class="result-score">Score: <span x-text="result.score"></span></div>
+                    <div class="result-text" x-text="result.text"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+</body>
+</html>
