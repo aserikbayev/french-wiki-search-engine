@@ -27,7 +27,7 @@ pip install -U sentence-transformers datasets flask retriv
 ```
 
 ### Run
-Model checkpoints are available in huggingface and can be used directly as follows:
+Model weights are [uploaded to huggingface](https://huggingface.co/azat-serikbayev/crossencoder-camembert-base-mmarcoFR-miracl-fr) and can be used as follows:
 ```python
 from sentence_transformers.cross_encoder import CrossEncoder
 
