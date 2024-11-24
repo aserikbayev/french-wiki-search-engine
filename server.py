@@ -13,6 +13,39 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+def create_index(index_name: str = "miracl-fr-bm25-index"):
+    """Create BM25 index from collection"""
+    logging.info(f"Creating index {index_name}...")
+
+    import datasets
+    collection = datasets.load_dataset("miracl/miracl-corpus", "fr", cache_dir="hf_datasets_cache")["train"]
+
+    retriever = SparseRetriever(
+        index_name=index_name,
+        model="bm25",
+        tokenizer="whitespace",
+        stemmer="french",
+        stopwords="french",
+        do_lowercasing=True,
+        do_ampersand_normalization=True,
+        do_special_chars_normalization=True,
+        do_acronyms_normalization=True,
+        do_punctuation_removal=True,
+    )
+
+    retriever = retriever.index(
+        collection,
+        show_progress=True,
+        callback=lambda doc: {
+            "id": doc["docid"],
+            "text": (doc.get("title", "") + ". " + doc["text"]).strip(),
+            "title": doc.get("title", "")
+        }
+    )
+
+    logging.info(f"Index {index_name} created successfully")
+    return retriever
+
 @dataclass
 class SearchResult:
     id: str
@@ -60,7 +93,7 @@ class SearchEngine:
         
         return sorted(results, key=lambda x: x.score, reverse=True)
     
-    def search(self, query: str, top_k: int = 1000) -> List[SearchResult]:
+    def search(self, query: str, top_k: int = 100) -> List[SearchResult]:
         """
         Search for documents using BM25 and rerank results
         
@@ -113,57 +146,9 @@ def search():
     
     return jsonify(results_json)
 
-def create_index(index_name: str = "miracl-fr-bm25-index"):
-    """Create BM25 index from collection"""
-    logging.info(f"Creating index {index_name}...")
-
-    import datasets
-    collection = datasets.load_dataset("miracl/miracl-corpus", "fr", cache_dir="hf_datasets_cache")["train"]
-    
-    retriever = SparseRetriever(
-        index_name=index_name,
-        model="bm25",
-        tokenizer="whitespace",
-        stemmer="french",
-        stopwords="french",
-        do_lowercasing=True,
-        do_ampersand_normalization=True,
-        do_special_chars_normalization=True,
-        do_acronyms_normalization=True,
-        do_punctuation_removal=True,
-    )
-    
-    retriever = retriever.index(
-        collection,
-        show_progress=True,
-        callback=lambda doc: {
-            "id": doc["docid"],
-            "text": (doc.get("title", "") + ". " + doc["text"]).strip(),
-            "title": doc.get("title", "")
-        }
-    )
-    
-    logging.info(f"Index {index_name} created successfully")
-    return retriever
-
-def init_app(index_name: str,
-             model_path): # local path or huggingface id
-    """Initialize the application"""
-    global search_engine
-    
-    # create index if missing
-    if not SparseRetriever.exists(index_name):
-        create_index(index_name)
-
-    # Initialize    
-    search_engine = SearchEngine(index_name, model_path)
-    
-    return app
-
-
 if __name__ == '__main__':
-    app = init_app(
-        index_name="miracl-fr-bm25-index",
-        model_path="azat-serikbayev/crossencoder-camembert-base-mmarcoFR-miracl-fr")
+    index_name="miracl-fr-bm25-index"
+    model_path="azat-serikbayev/crossencoder-camembert-base-mmarcoFR-miracl-fr" # local path or huggingface id
+    search_engine = SearchEngine(index_name, model_path)
     
     app.run(debug=True, use_reloader=False)
