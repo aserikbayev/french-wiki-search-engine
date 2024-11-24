@@ -45,7 +45,7 @@ class SearchEngine:
         pairs = [[query, doc['text']] for doc in documents]
         
         # Get reranker scores
-        scores = self.reranker.predict(pairs)
+        scores = self.reranker.predict(pairs, batch_size=self.batch_size)
         
         # Combine with document info and sort by score
         results = []
@@ -151,11 +151,9 @@ def init_app(index_name: str,
     """Initialize the application"""
     global search_engine
     
-    # # create index if missing
-    # if not SparseRetriever.exists(index_name):
-    #     import datasets
-    #     corpus = datasets.load_dataset("miracl/miracl-corpus", "fr", cache_dir="hf_datasets_cache")["train"]
-    #     create_index(corpus, index_name)
+    # create index if missing
+    if not SparseRetriever.exists(index_name):
+        create_index(index_name)
 
     # Initialize    
     search_engine = SearchEngine(index_name, model_path)
@@ -168,4 +166,4 @@ if __name__ == '__main__':
         index_name="miracl-fr-bm25-index",
         model_path="azat-serikbayev/crossencoder-camembert-base-mmarcoFR-miracl-fr")
     
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
